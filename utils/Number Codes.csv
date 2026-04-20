@@ -1,0 +1,488 @@
+Line Description,Tran. Code,Tran. Description,User / ICBA Defined
+CURRENT ACCOUNT,101,Cash Deposit,User
+CURRENT ACCOUNT,102,Cheque Deposit,User
+CURRENT ACCOUNT,103,Journal Deposit,User
+CURRENT ACCOUNT,104,MO/PO Deposit,User
+CURRENT ACCOUNT,105,House Cheque Deposit,User
+CURRENT ACCOUNT,106,Late Cheque Deposit,User
+CURRENT ACCOUNT,120,Bulk Cheque Deposit,User
+CURRENT ACCOUNT,122,Marked Cheque Deposit/Special Clearing,User
+CURRENT ACCOUNT,132,OCP Deposit,User
+CURRENT ACCOUNT,133,LCP Deposit,User
+CURRENT ACCOUNT,134,Foreign Cheque Deposit,User
+CURRENT ACCOUNT,135,Force Clearance on Foreign Chq/FCP,User
+CURRENT ACCOUNT,136,FCP Deposit,User
+CURRENT ACCOUNT,173,Write Off OD,System
+CURRENT ACCOUNT,182,Force Clearance On Cheque,User
+CURRENT ACCOUNT,184,Force Clearance On MO/PO,User
+CURRENT ACCOUNT,186,Make 1 Day Float Clearance,System
+CURRENT ACCOUNT,189,DIRECT CREDIT,System
+CURRENT ACCOUNT,192,Auto Cheque Clearance,System
+CURRENT ACCOUNT,193,Interest Crediting,System
+CURRENT ACCOUNT,198,Salary Cheque (Employee),System
+CURRENT ACCOUNT,199,Reversal Of Charges,System
+CURRENT ACCOUNT,201,Cash Cheque Withdrawal,User
+CURRENT ACCOUNT,202,Inward Clearing Cheque,User
+CURRENT ACCOUNT,203,Journal Withdrawal/Debit Advice,User
+CURRENT ACCOUNT,206,Counter Cheque Withdrawal,User
+SAVINGS ACCOUNT,107,Cash Deposit With Book,User
+CURRENT ACCOUNT,210,Balance Below Zero,System
+CURRENT ACCOUNT,212,House Cheque Debit,User
+CURRENT ACCOUNT,222,Debit Cheque Marked,User
+CURRENT ACCOUNT,240,Close Account,User
+CURRENT ACCOUNT,241,Close Account By Cash,System
+CURRENT ACCOUNT,242,Close Account By Cheque,System
+CURRENT ACCOUNT,243,Close UMA-3 Account,System
+CURRENT ACCOUNT,289,DIRECT DEBIT,System
+CURRENT ACCOUNT,292,Bank Commission Charges,System
+CURRENT ACCOUNT,293,OD Debit Interest,System
+CURRENT ACCOUNT,294,Inward Return Charges,System
+CURRENT ACCOUNT,296,Witholding Tax,System
+CURRENT ACCOUNT,297,Bill Payment(ATM/TELEBANKING),System
+CURRENT ACCOUNT,298,Salary Cheque Return (Employee),System
+SAVINGS ACCOUNT,207,Cash Withdrawal Without Book,User
+CURRENT ACCOUNT,302,Inward Cheque Return,User
+CURRENT ACCOUNT,303,Cheque Return After Clearance,System
+CURRENT ACCOUNT,304,Reversal of Inward Return,System
+CURRENT ACCOUNT,305,Foreign Cheque Return,User
+CURRENT ACCOUNT,306,MO/PO Return,User
+CURRENT ACCOUNT,309,Error Correction,User
+CURRENT ACCOUNT,321,Outward Cash Return,User
+CURRENT ACCOUNT,322,Outward Cheque Return,User
+CURRENT ACCOUNT,401,Open New Account,User
+CURRENT ACCOUNT,411,REPLACE OLD PASSBOOK,User
+CURRENT ACCOUNT,501,Claw Back Interest Earn,System
+CURRENT ACCOUNT,699,Interest Accrual,System
+CURRENT ACCOUNT,701,ATM Deposit Cash,System
+CURRENT ACCOUNT,702,ATM Deposit Cheque,System
+CURRENT ACCOUNT,209,Temporary OD Granted,System
+CURRENT ACCOUNT,704,ATM/TELEBANKING Enquiry,System
+SAVINGS ACCOUNT,209,Journal Withdrawal  Without Book,User
+CURRENT ACCOUNT,709,eChannel Transfer Out,System
+CURRENT ACCOUNT,713,ATM/eBanking Payment In,System
+CURRENT ACCOUNT,719,eChannel Payment out,System
+CURRENT ACCOUNT,299,Miscellaneous Charges,System
+CURRENT ACCOUNT,726,POS Purchase Without Pin,System
+SAVINGS ACCOUNT,299,Miscellaneous Charges,System
+CURRENT ACCOUNT,743,IIS Reversed,System
+CURRENT ACCOUNT,771,Charges (Salary/IB Trans) Pay Cash,System
+CURRENT ACCOUNT,776,Change Of Rate,System
+CURRENT ACCOUNT,777,Change Of Product Line and Type,System
+CURRENT ACCOUNT,778,Create Facility/Special Adjustment,System
+CURRENT ACCOUNT,779,Change Of Accrual,System
+CURRENT ACCOUNT,801,Revalidate Voucher,User
+CURRENT ACCOUNT,802,PRINT PASSBOOK,User
+CURRENT ACCOUNT,803,Revalidate Cheque,User
+CURRENT ACCOUNT,804,Reprint Bankers Cheque,User
+CURRENT ACCOUNT,805,PRINT PASSBOOK COVER,User
+CURRENT ACCOUNT,806,Reprint Credit/Debit Advice,User
+CURRENT ACCOUNT,807,Reprint Inward Cheque Return,User
+CURRENT ACCOUNT,809,Reprint Specimen Card,User
+CURRENT ACCOUNT,911,Print Account Balance,User
+CURRENT ACCOUNT,B/F,Brought Forward,System
+CUSTOMER INFORMATION FILE,152,Salary Crediting By Cheque,System
+CUSTOMER INFORMATION FILE,153,Salary Crediting By Journal,System
+CUSTOMER INFORMATION FILE,182,Force Cheque Clearance,System
+CUSTOMER INFORMATION FILE,183,Force Clearance On Salary Cheq,System
+CUSTOMER INFORMATION FILE,192,Auto Cheque Clearance,System
+CUSTOMER INFORMATION FILE,197,Salary Cheque Clearance,System
+CUSTOMER INFORMATION FILE,296,Witholding Tax,System
+CUSTOMER INFORMATION FILE,299,Miscellaneous Charges,System
+CUSTOMER INFORMATION FILE,302,Cheque Return,System
+CUSTOMER INFORMATION FILE,304,Salary Cheque Return,System
+CUSTOMER INFORMATION FILE,309,Error Correction,System
+CUSTOMER INFORMATION FILE,473,ATM Cash Transfer In,System
+CUSTOMER INFORMATION FILE,474,ATM Cash Transfer Out,System
+CUSTOMER INFORMATION FILE,475,ATM Cash Excess In Tray,System
+CUSTOMER INFORMATION FILE,476,ATM Cash Short In Tray,System
+CUSTOMER INFORMATION FILE,481,Miscellaneous Cash In,System
+CUSTOMER INFORMATION FILE,482,Miscellaneous Cheque In,System
+CUSTOMER INFORMATION FILE,483,Miscellaneous Journal In,System
+CUSTOMER INFORMATION FILE,487,Miscellaneous Cash Out,System
+CUSTOMER INFORMATION FILE,488,Miscellaneous Cheque Out,System
+CUSTOMER INFORMATION FILE,489,Miscellaneous Journal Out,System
+CUSTOMER INFORMATION FILE,491,Processing Deposit - Cash,System
+CUSTOMER INFORMATION FILE,492,Processing Deposit - Cheque,System
+CUSTOMER INFORMATION FILE,493,Processing Deposit - Journal,System
+CUSTOMER INFORMATION FILE,498,Processing Deposit Refund-Cheq,System
+CUSTOMER INFORMATION FILE,499,Processing Deposit Refund-Jnrl,System
+CUSTOMER INFORMATION FILE,501,Appraisal Deposit Coll. - Cash,System
+CUSTOMER INFORMATION FILE,502,Appraisal Deposit Coll. - Cheque,System
+CUSTOMER INFORMATION FILE,503,Appraisal Deposit Coll. - Journal,System
+CUSTOMER INFORMATION FILE,505,Appraisal Deposit Refund - Cheque,System
+CUSTOMER INFORMATION FILE,506,Appraisal Deposit Refund - Journal,System
+CUSTOMER INFORMATION FILE,509,Reversal Of Appraisal Deposit Collected,System
+CUSTOMER INFORMATION FILE,771,Service Charge Collect By Cash,System
+CUSTOMER INFORMATION FILE,801,Revalidate Voucher,System
+CUSTOMER INFORMATION FILE,911,Print Teller Balance,System
+CUSTOMER INFORMATION FILE,912,Print Address,System
+FIXED DEPOSIT,101,Cash Deposit,System
+FIXED DEPOSIT,102,Cheque Deposit Creating Cert.,System
+FIXED DEPOSIT,103,Journal Deposit,System
+FIXED DEPOSIT,105,House Cheque Deposit,System
+FIXED DEPOSIT,106,Cheque Deposit Pending,System
+FIXED DEPOSIT,108,Pending Cheque Clearance,System
+FIXED DEPOSIT,151,Cash Deposit Pending,System
+FIXED DEPOSIT,153,Cash Deposit Clearing,System
+FIXED DEPOSIT,182,Force Clearance On Cheque,System
+FIXED DEPOSIT,192,Auto Cheque Clearance,System
+FIXED DEPOSIT,201,Cash Withdrawal,System
+FIXED DEPOSIT,202,Cheque Withdrawal,System
+FIXED DEPOSIT,203,Journal Withdrawal/Debit Advice,System
+FIXED DEPOSIT,240,Close Account,System
+FIXED DEPOSIT,243,Uplift UMA-3 Certificate,System
+FIXED DEPOSIT,253,Pending Cash Reversal,System
+FIXED DEPOSIT,262,Bank Commission Deduct From Cash,System
+FIXED DEPOSIT,292,Bank Commission Charges,System
+FIXED DEPOSIT,302,Cheque Return,System
+FIXED DEPOSIT,306,Pending Cheque Return,System
+FIXED DEPOSIT,309,Error Correction,System
+FIXED DEPOSIT,401,Open Account,System
+FIXED DEPOSIT,412,Lost Certificate,System
+FIXED DEPOSIT,455,Update Unposted Transaction,System
+FIXED DEPOSIT,509,Certificate Error Correction,System
+FIXED DEPOSIT,510,Create New Certificate,System
+FIXED DEPOSIT,511,Create New Certificate,System
+FIXED DEPOSIT,512,Create From Renewal Certificate,System
+FIXED DEPOSIT,514,Create From Partial Uplift Certificate,System
+FIXED DEPOSIT,520,Renewals Certificate,System
+FIXED DEPOSIT,531,Mature Uplift Certificate,System
+FIXED DEPOSIT,532,Premature Uplift Certificate,System
+FIXED DEPOSIT,540,Partial Uplift Certificate,System
+FIXED DEPOSIT,550,Interest Withdrawal,System
+FIXED DEPOSIT,551,Advance Interest Withdrawal,System
+FIXED DEPOSIT,560,Void Certificate,System
+FIXED DEPOSIT,570,Uplift UMA-3 Certificate,System
+FIXED DEPOSIT,698,Prepaid Interest Reversed,System
+FIXED DEPOSIT,699,Interest Accrual,System
+FIXED DEPOSIT,777,Change Of Product Line and Type,System
+FIXED DEPOSIT,778,Special Adjustment,System
+FIXED DEPOSIT,801,Revalidate Voucher,System
+FIXED DEPOSIT,802,Reprint Passbook,System
+FIXED DEPOSIT,803,Revalidate Cheque,System
+FIXED DEPOSIT,804,Reprint Bankers Cheque,System
+FIXED DEPOSIT,805,Reprint Certificate,System
+FIXED DEPOSIT,806,Print Auto Renewed Certificates,System
+FIXED DEPOSIT,807,Reprint Passbook Cover,System
+FIXED DEPOSIT,808,Reprint Debit/Credit Advice,System
+FIXED DEPOSIT,809,Reprint Specimen Card,User
+FIXED DEPOSIT,911,Print Certificate Balance,System
+LOANS,101,Collection - Cash,System
+LOANS,102,Collection - Cheque,System
+LOANS,103,Collection - Journal,System
+LOANS,111,Partial Redemption - Cash,System
+LOANS,112,Partial Redemption - Cheque,System
+LOANS,113,Partial Redemption - Journal,System
+LOANS,131,Full Redemption - Cash,System
+LOANS,132,Full Redemption - Cheque,System
+LOANS,133,Full Redemption - Journal,System
+LOANS,141,Manual Batch Master Coll - Cash,System
+LOANS,142,Manual Batch Master Coll - Cheque,System
+LOANS,143,Manual Batch Master Coll - Journal,System
+LOANS,147,Salary Credit Payment Coll - Cash,System
+LOANS,148,Salary Credit Payment Coll - Cheque,System
+LOANS,149,Salary Credit Payment Coll - Journal,System
+LOANS,309,Error Correction,System
+LOANS,310,Error Correction on Batch,System
+MONEY MARKET,102,CHEQUE DEPOSITS,System
+MONEY MARKET,103,JOURNAL DEPOSITS,System
+MONEY MARKET,192,CHEQUE CLEARANCE,System
+MONEY MARKET,202,CHEQUE WITHDRAWAL,System
+MONEY MARKET,203,JOURNAL WITHDRAWAL,System
+MONEY MARKET,302,CHEQUE RETURN,System
+MONEY MARKET,310,BUY EQUITY,System
+MONEY MARKET,311,BUY EQUITY (VALUE DATE),System
+MONEY MARKET,320,SELL EQUITY,System
+MONEY MARKET,321,SELL EQUITY (VALUE DATE),System
+MONEY MARKET,330,BONUS ISSUED,System
+MONEY MARKET,340,RIGHTS ENTITLED,System
+MONEY MARKET,350,BUY EQUITY,System
+MONEY MARKET,351,BUY EQUITY (VALUE DATE),System
+MONEY MARKET,360,SELL EQUITY,System
+MONEY MARKET,361,SELL EQUITY (VALUE DATE),System
+MONEY MARKET,370,RIGHTS TAKE UP,System
+MONEY MARKET,380,PURCHASE OF RIGHTS,System
+MONEY MARKET,381,RIGHTS PURCHASE(VALUE DATE),System
+MONEY MARKET,390,SALES OF RIGHTS,System
+MONEY MARKET,391,SALES OF RIGHTS(VALUE DATE),System
+MONEY MARKET,401,ISSUE INSTRUMENT,System
+MONEY MARKET,402,INTEREST PAYMENT OF ISSUED INSTRUMENT,System
+MONEY MARKET,403,MATURITY OF ISSUED INSTRUMENT,System
+MONEY MARKET,410,DISCOUNT INSTRUMENT,System
+MONEY MARKET,411,PURCHASE INSTRUMENT,System
+MONEY MARKET,412,SELL INSTRUMENT,System
+MONEY MARKET,413,BUY REPO,System
+MONEY MARKET,414,SELL REPO,System
+MONEY MARKET,420,DISCOUNT MATURED INSTRUMENT,System
+MONEY MARKET,421,INT. PAYMENT OF PURCHASED INSTRUMENT,System
+MONEY MARKET,422,MATURITY OF PURCHASED INSTRUMENT,System
+MONEY MARKET,423,INT. PAYMENT OF SOLD INSTRUMENT,System
+MONEY MARKET,424,MATURITY OF SOLD INSTRUMENT,System
+MONEY MARKET,425,MATURITY OF SOLD REPO,System
+MONEY MARKET,426,MATURITY OF BUY REPO,System
+MONEY MARKET,429,REVALUATION INSTRUMENT,System
+MONEY MARKET,511,NEW DEPOSIT,System
+MONEY MARKET,512,ROLLOVER DEPOSIT,System
+MONEY MARKET,518,MISCELLANEOUS TRANS. - CHEQUE,System
+MONEY MARKET,519,MISCELLANEOUS TRANS. - JOURNAL,System
+MONEY MARKET,521,INTEREST PAYMENT,System
+MONEY MARKET,531,MATURE WITHDRAWAL,System
+MONEY MARKET,532,PREMATURE WITHDRAWAL,System
+MONEY MARKET,550,INTEREST WITHDRAWAL,System
+MONEY MARKET,560,VOID DEALS,System
+MONEY MARKET,561,REVERSAL,System
+MONEY MARKET,611,NEW PLACEMENT,System
+MONEY MARKET,612,ROLLOVER PLACEMENT,System
+MONEY MARKET,618,FUNDS TRANSFER - CHEQUE,System
+MONEY MARKET,619,FUNDS TRANSFER - JOURNAL,System
+MONEY MARKET,621,INTEREST PAYMENT,System
+MONEY MARKET,631,MATURE WITHDRAWAL,System
+MONEY MARKET,632,PREMATURE WITHDRAWAL,System
+MONEY MARKET,650,PROFIT WITHDRAWAL,System
+MONEY MARKET,661,PREMATURE WITHDRAWAL,System
+MONEY MARKET,662,INTEREST WITHDRAWAL,System
+MONEY MARKET,663,PRINCIPAL INCREASE,System
+MONEY MARKET,664,PRINCIPAL DECREASE,System
+MONEY MARKET,665,INTEREST RATE CHANGE,System
+MONEY MARKET,666,INTEREST ACCRUE INCREASE,System
+MONEY MARKET,667,INTEREST ACCRUE DECREASE,System
+MONEY MARKET,669,CHANGE MATURITY DATE,System
+MONEY MARKET,699,ACCRUED INTEREST INCOME,System
+MONEY MARKET,700,INTEREST ACCRUE EXPENSEE,System
+MONEY MARKET,701,UNEARNED INTEREST,System
+MONEY MARKET,702,PREMIUM BALANCE,System
+REMITTANCE SYSTEM,101,Debit Cash,System
+REMITTANCE SYSTEM,102,Debit Cheque,System
+REMITTANCE SYSTEM,103,Debit Journal/CASA,System
+REMITTANCE SYSTEM,104,TC Claim Thru DD,System
+REMITTANCE SYSTEM,105,TC Claim Thru TT,System
+REMITTANCE SYSTEM,134,Foreign Cheque Deposit,System
+REMITTANCE SYSTEM,135,Force FC Clearance,System
+REMITTANCE SYSTEM,201,Credit Cash,System
+REMITTANCE SYSTEM,202,Credit Cheque,System
+REMITTANCE SYSTEM,203,Credit Journal/CASA,System
+REMITTANCE SYSTEM,204,TC Pay Thru DD,System
+REMITTANCE SYSTEM,205,TC Pay Thru TT,System
+REMITTANCE SYSTEM,299,Remittance Charges,System
+REMITTANCE SYSTEM,302,Debit Clearance Return,System
+REMITTANCE SYSTEM,305,Foreign Cheque Return,System
+REMITTANCE SYSTEM,309,Error Correction,System
+REMITTANCE SYSTEM,415,Out TT Refund,System
+REMITTANCE SYSTEM,416,Lost DD Refund,System
+REMITTANCE SYSTEM,417,Lost BC Refund,System
+REMITTANCE SYSTEM,418,Lost TC Refund,System
+REMITTANCE SYSTEM,509,Credit Card Reversal,System
+REMITTANCE SYSTEM,510,Issuance of Fund Transfer,System
+REMITTANCE SYSTEM,610,Issuance of Telegraphic Transfer,System
+REMITTANCE SYSTEM,620,Issuance of Demand Draft,System
+REMITTANCE SYSTEM,630,Issuance of Banker's Cheque,System
+REMITTANCE SYSTEM,650,Sale of Traveller's Cheque,System
+REMITTANCE SYSTEM,660,Sale of Precious Metal,System
+REMITTANCE SYSTEM,670,Sale of Foreign Currency,System
+REMITTANCE SYSTEM,700,Credit Card Reimbursement Claim,System
+REMITTANCE SYSTEM,701,Credit Card Cash Advance,System
+REMITTANCE SYSTEM,710,Encashment of Telegraphic Transfer,System
+REMITTANCE SYSTEM,720,Encashment of Demand Draft,System
+REMITTANCE SYSTEM,730,Encashment of Banker's Cheque,System
+REMITTANCE SYSTEM,750,Encashment of Traveller's Cheque,System
+REMITTANCE SYSTEM,755,Inventory Stock In/Out,System
+REMITTANCE SYSTEM,760,Purchase of Precious Metal,System
+REMITTANCE SYSTEM,770,Purchase of Foreign Currency,System
+REMITTANCE SYSTEM,780,Re-Purchase of Demand Draft,System
+REMITTANCE SYSTEM,790,Re-Purchase of Banker's Cheque,System
+REMITTANCE SYSTEM,801,Re-Print BC/DD/Receipt,System
+REMITTANCE SYSTEM,820,Debit Clearance - DD,System
+REMITTANCE SYSTEM,830,Debit Clearance - BC,System
+SAVINGS ACCOUNT,101,Cash Deposit With Book,User
+SAVINGS ACCOUNT,102,Cheque Deposit With Book,User
+SAVINGS ACCOUNT,103,Journal Deposit With Book,User
+SAVINGS ACCOUNT,104,MO/PO Deposit With Book,User
+SAVINGS ACCOUNT,105,MO/PO Deposit Without Book,User
+SAVINGS ACCOUNT,106,Late Cheque Deposit,User
+CURRENT ACCOUNT,703,ATM/TELEBANKING Transfer In,System
+SAVINGS ACCOUNT,108,Cheque Deposit Without Book,User
+SAVINGS ACCOUNT,109,Journal Deposit Without Book,User
+SAVINGS ACCOUNT,114,House Cheque Deposit With Book,User
+SAVINGS ACCOUNT,115,House Cheque Deposit Without Book,User
+SAVINGS ACCOUNT,120,Bulk Cheque Deposit,User
+SAVINGS ACCOUNT,122,Marked Cheque Deposit,User
+SAVINGS ACCOUNT,132,OCP Deposit With Book,User
+SAVINGS ACCOUNT,133,LCP Deposit With Book,User
+SAVINGS ACCOUNT,134,Foreign Cheque Deposit,User
+SAVINGS ACCOUNT,135,Force Clearance on Foreign Chq/FCP,User
+SAVINGS ACCOUNT,136,FCP Deposit With Book,User
+SAVINGS ACCOUNT,142,OCP Deposit Without Book,User
+SAVINGS ACCOUNT,143,LCP Deposit Without Book,User
+SAVINGS ACCOUNT,146,FCP Deposit Without Book,User
+SAVINGS ACCOUNT,182,Force Clearance On Cheque,User
+SAVINGS ACCOUNT,184,Force Clearance On MO/PO,User
+SAVINGS ACCOUNT,186,Make 1 Day Float Clearance,System
+SAVINGS ACCOUNT,189,DIRECT CREDIT,System
+SAVINGS ACCOUNT,192,Auto Cheque Clearance,System
+SAVINGS ACCOUNT,193,INTEREST,System
+SAVINGS ACCOUNT,198,Salary Cheque (Employee),System
+SAVINGS ACCOUNT,1CO,Debit Passbook Consolidated,System
+SAVINGS ACCOUNT,201,Cash Withdrawal With Book,User
+SAVINGS ACCOUNT,202,Cheque Withdrawal With Book,User
+SAVINGS ACCOUNT,203,Journal Withdrawal With Book,User
+SAVINGS ACCOUNT,703,ATM/TELEBANKING Transfer In,System
+SAVINGS ACCOUNT,208,Cheque Withdrawal Without Book,User
+CURRENT ACCOUNT,708,ATM Withdrawal,System
+SAVINGS ACCOUNT,210,Balance Below Zero,System
+SAVINGS ACCOUNT,240,Close Account,User
+SAVINGS ACCOUNT,241,Close Account By Cash,System
+SAVINGS ACCOUNT,242,Close Account By Cheque,System
+SAVINGS ACCOUNT,243,Close Account By Journal,System
+SAVINGS ACCOUNT,289,DIRECT DEBIT,System
+SAVINGS ACCOUNT,292,Bank Commission Charges,System
+SAVINGS ACCOUNT,294,Inward Return Charges,System
+SAVINGS ACCOUNT,296,Witholding Tax,System
+SAVINGS ACCOUNT,297,Bill Payment,System
+SAVINGS ACCOUNT,298,Salary Cheque Return (Employee),System
+SAVINGS ACCOUNT,708,ATM Withdrawal,System
+SAVINGS ACCOUNT,2CO,Credit Passbook Consolidated,System
+SAVINGS ACCOUNT,302,Cheque Return,User
+SAVINGS ACCOUNT,303,Cheque Return After Clearance,System
+SAVINGS ACCOUNT,304,Reversal of Inward Return,System
+SAVINGS ACCOUNT,305,Foreign Cheque Return,User
+SAVINGS ACCOUNT,306,MO/PO Return,User
+SAVINGS ACCOUNT,309,Error Correction,User
+SAVINGS ACCOUNT,401,Open New Account,User
+SAVINGS ACCOUNT,411,Replace Old Passbook,User
+SAVINGS ACCOUNT,412,Lost Passbook,User
+SAVINGS ACCOUNT,413,Replace Damaged Passbook,User
+SAVINGS ACCOUNT,455,Update Unposted Transaction,User
+SAVINGS ACCOUNT,699,Interest Accrual,System
+SAVINGS ACCOUNT,701,ATM Deposit Cash,System
+SAVINGS ACCOUNT,702,ATM Deposit Cheque,System
+CURRENT ACCOUNT,723,ATM POS Payment In,System
+SAVINGS ACCOUNT,704,ATM/TELEBANKING Enquiry,System
+CURRENT ACCOUNT,729,ATM POS Payment Out,System
+SAVINGS ACCOUNT,709,eChannel Transfer Out,System
+SAVINGS ACCOUNT,713,ATM Bill Payment In,System
+SAVINGS ACCOUNT,719,eChannel Payment out,System
+SAVINGS ACCOUNT,726,POS Purchase Without Pin,System
+SAVINGS ACCOUNT,771,Charges (Salary/IB Trans) Pay Cash,System
+SAVINGS ACCOUNT,777,Change Of Product Line and Type,System
+SAVINGS ACCOUNT,778,Special Adjustment,System
+SAVINGS ACCOUNT,779,Change Of Accrual,System
+SAVINGS ACCOUNT,801,Revalidate Voucher,User
+SAVINGS ACCOUNT,802,Reprint Passbook,User
+SAVINGS ACCOUNT,803,Revalidate Cheque,User
+SAVINGS ACCOUNT,804,Reprint Banker's Cheque,User
+SAVINGS ACCOUNT,805,Reprint Passbook Cover,User
+SAVINGS ACCOUNT,806,Reprint Debit/Credit Advice,User
+SAVINGS ACCOUNT,807,Reprint Inward Cheque Return,User
+SAVINGS ACCOUNT,809,Reprint Specimen Card,User
+SAVINGS ACCOUNT,911,Print Account Balance,User
+SAVINGS ACCOUNT,B/F,Brought Forward,System
+SAVINGS ACCOUNT,QCO,Cheque Deposit Consolidated,System
+TRADE FINANCE,101,Cash TF Settlement,System
+TRADE FINANCE,102,Cheque TF Settlement,System
+TRADE FINANCE,103,Journal TF Settlement,System
+TRADE FINANCE,201,Cash TF Settlement,System
+TRADE FINANCE,202,Cheque TF Settlement,System
+TRADE FINANCE,203,Journal TF Settlement,System
+TRADE FINANCE,300,ILC Issuance,System
+TRADE FINANCE,309,ILC Uplift,System
+TRADE FINANCE,310,Reinstate Import Credit,System
+TRADE FINANCE,314,ILC Amendment,System
+TRADE FINANCE,315,Reactivate Import Credit,System
+TRADE FINANCE,319,Nego Bill Receivable Upliftment,System
+TRADE FINANCE,321,Nego Receive,System
+TRADE FINANCE,337,Nego Payment,System
+TRADE FINANCE,342,ILC Acceptance,System
+TRADE FINANCE,357,ILC Acceptance Payment,System
+TRADE FINANCE,360,Nego Bill Receivable Issuance,System
+TRADE FINANCE,363,Nego Receive,System
+TRADE FINANCE,365,Nego Bill Receivable Amendment,System
+TRADE FINANCE,369,Nego Receive Uplift,System
+TRADE FINANCE,370,Nego Bill Receivable Payment,System
+TRADE FINANCE,400,ICO Issue,System
+TRADE FINANCE,409,ICO Uplift,System
+TRADE FINANCE,414,ICO Amendment,System
+TRADE FINANCE,417,ICO Payment,System
+TRADE FINANCE,422,ICO Acceptance,System
+TRADE FINANCE,437,ICO Acceptance Payment,System
+TRADE FINANCE,500,ISG Issue,System
+TRADE FINANCE,519,ISG Uplift,System
+TRADE FINANCE,528,ISG Claim,System
+TRADE FINANCE,530,EBP New,System
+TRADE FINANCE,537,EBP Payment,System
+TRADE FINANCE,539,EBP Uplift,System
+TRADE FINANCE,542,EBP Acceptance,System
+TRADE FINANCE,547,EBP Acceptance Payment,System
+TRADE FINANCE,549,EBP Acceptance Uplift,System
+TRADE FINANCE,550,PCR New,System
+TRADE FINANCE,557,PCR Payment,System
+TRADE FINANCE,559,PCR Uplift,System
+TRADE FINANCE,560,IBL Endorsement,System
+TRADE FINANCE,569,IBL Endorsement Uplift,System
+TRADE FINANCE,574,IBA Issuance,System
+TRADE FINANCE,576,IBA Payment,System
+TRADE FINANCE,599,TF Past Due Accrual,System
+TRADE FINANCE,600,IBG Issuance,System
+TRADE FINANCE,614,IBG Amendment,System
+TRADE FINANCE,619,IBG Uplift,System
+TRADE FINANCE,628,IBG Claim,System
+TRADE FINANCE,655,TF Past Due,System
+TRADE FINANCE,657,TF Past Due Payment,System
+TRADE FINANCE,699,TF Revaluation,System
+TRADE FINANCE,700,ITR Issue,System
+TRADE FINANCE,709,ITR Uplift,System
+TRADE FINANCE,714,ITR Amend,System
+TRADE FINANCE,727,ITR Payment,System
+TRADE FINANCE,799,ITR Interest Accrual,System
+TRADE FINANCE,800,ELC Issuance,System
+TRADE FINANCE,803,ELC Confirm,System
+TRADE FINANCE,804,ERC Amendment,System
+TRADE FINANCE,805,ELC Transfer,System
+TRADE FINANCE,809,ELC Confirm Uplift,System
+TRADE FINANCE,810,ERC New,System
+TRADE FINANCE,814,ELC Amendment,System
+TRADE FINANCE,818,ERC Payment,System
+TRADE FINANCE,819,ERC Uplift,System
+TRADE FINANCE,820,ECO New,System
+TRADE FINANCE,822,ECO Acceptance,System
+TRADE FINANCE,824,ECO Amendment,System
+TRADE FINANCE,827,ECO Payment,System
+TRADE FINANCE,829,ECO Uplift,System
+TRADE FINANCE,837,ECO Acceptance Payment,System
+TRADE FINANCE,839,ECO Acceptance Uplift,System
+TRADE FINANCE,840,ECP New,System
+TRADE FINANCE,847,ECP Payment,System
+TRADE FINANCE,849,ECP Uplift,System
+TRADE FINANCE,852,ECP Acceptance,System
+TRADE FINANCE,857,ECP Acceptance Payment,System
+TRADE FINANCE,859,ECP Acceptance Uplift,System
+TRADE FINANCE,860,EBN New,System
+TRADE FINANCE,862,EBN Acceptance,System
+TRADE FINANCE,864,EBN Amendment,System
+TRADE FINANCE,867,EBN Payment,System
+TRADE FINANCE,869,EBN Uplift,System
+TRADE FINANCE,877,EBN Acceptance Payment,System
+TRADE FINANCE,879,EBN Acceptance Uplift,System
+TRADE FINANCE,884,Export Banker''s Issuance,System
+TRADE FINANCE,886,Export Banker''s Payment,System
+TRADE FINANCE,899,Bill Finance Interest,System
+TRADE FINANCE,901,Pay Trading Exchange,System
+TRADE FINANCE,902,Receive Trading Exchange,System
+TRADE FINANCE,903,Pay Trading Exchange,System
+TRADE FINANCE,904,Receive Trading Exchange,System
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,,
+,,, 
+,,,
+,,,
+,,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      ,
+,,,
+,,,
+,,,
+,,,
+,,,
