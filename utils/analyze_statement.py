@@ -1291,6 +1291,214 @@ def _apply_profile_rules(profile: Dict[str, Any], features: Dict[str, Any]) -> D
     return out
 
 
+
+def _risk_label_for_reason(reason: Any) -> str:
+    r = _normalize_text(str(reason or ""))
+    if r in ("structured_deposits", "structured_payments"):
+        return "Structuring"
+    if r == "pass_through":
+        return "Pass-through"
+    if r == "layering":
+        return "Layering"
+    if r == "round_figures":
+        return "Round-figure amounts"
+    if r == "salary_pattern":
+        return "Salary-like pattern"
+    if r == "cash_intensive":
+        return "Cash-intensive activity"
+    if r == "third_party":
+        return "Third-party activity"
+    if r == "recurrence":
+        return "Recurrence"
+    return str(reason or "").replace("_", " ").title()
+
+
+def _top_parties_from_stats(stats: Dict[str, Any], limit: int = 5) -> List[str]:
+    out: List[str] = []
+    if not isinstance(stats, dict):
+        return out
+
+    for item in (stats.get("top_parties") or []):
+        s = str(item or "").strip()
+        if s and s not in out:
+            out.append(s)
+        if len(out) >= max(1, int(limit)):
+            return out
+
+    for block_key in ("identifiers", "top_identifiers", "parties", "top_parties_detailed"):
+        rows = stats.get(block_key) or []
+        if not isinstance(rows, list):
+            continue
+        for row in rows:
+            if not isinstance(row, dict):
+                continue
+            s = str(
+                row.get("identifier")
+                or row.get("label")
+                or row.get("party")
+                or row.get("name")
+                or ""
+            ).strip()
+            if s and s not in out:
+                out.append(s)
+            if len(out) >= max(1, int(limit)):
+                return out
+    return out
+
+
+def _build_summary_patterns(material_channels: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    buckets: Dict[Tuple[str, str], Dict[str, Any]] = {}
+
+    for ch in material_channels or []:
+        channel_desc = str(ch.get("DESCRIPTION") or "").strip() or str(ch.get("TRANSCODE") or "").strip() or "UNKNOWN"
+        by_reason = ch.get("detector_suspicious_by_reason") or {}
+        if not isinstance(by_reason, dict):
+            continue
+
+        for reason, stats_block in by_reason.items():
+            if not isinstance(stats_block, dict):
+                continue
+
+            risk_label = _risk_label_for_reason(reason)
+
+            for direction in ("credit", "debit"):
+                stats = stats_block.get(direction) or {}
+                if not isinstance(stats, dict):
+                    continue
+
+                count = int(stats.get("count") or 0)
+                total = float(stats.get("total") or 0.0)
+                if count <= 0 and total <= 0:
+                    continue
+
+                key = (risk_label, direction)
+                bucket = buckets.setdefault(key, {
+                    "type": risk_label,
+                    "direction": direction,
+                    "count": 0,
+                    "total": 0.0,
+                    "date_min": None,
+                    "date_max": None,
+                    "channels": [],
+                    "parties": [],
+                })
+
+                bucket["count"] += count
+                bucket["total"] += total
+
+                dmin = _safe_dt_str(stats.get("date_min"))
+                dmax = _safe_dt_str(stats.get("date_max"))
+
+                if dmin:
+                    if not bucket["date_min"] or dmin < bucket["date_min"]:
+                        bucket["date_min"] = dmin
+                if dmax:
+                    if not bucket["date_max"] or dmax > bucket["date_max"]:
+                        bucket["date_max"] = dmax
+
+                if channel_desc and channel_desc not in bucket["channels"]:
+                    bucket["channels"].append(channel_desc)
+
+                for p in _top_parties_from_stats(stats, limit=10):
+                    if p and p not in bucket["parties"]:
+                        bucket["parties"].append(p)
+
+    ranked = sorted(
+        buckets.values(),
+        key=lambda x: (-float(x.get("total") or 0.0), -int(x.get("count") or 0), str(x.get("type") or "")),
+    )
+
+    out: List[Dict[str, Any]] = []
+    for item in ranked:
+        out.append({
+            "type": item["type"],
+            "direction": item["direction"],
+            "count": int(item["count"]),
+            "total": round(float(item["total"]), 2),
+            "date_min": item["date_min"],
+            "date_max": item["date_max"],
+            "channels": item["channels"][:5],
+            "channel": ", ".join(item["channels"][:3]),
+            "parties": item["parties"][:5],
+        })
+    return out
+
+
+def _build_report_summary(
+    material_channels: List[Dict[str, Any]],
+    channel_profile: Dict[str, Any],
+    summary_patterns: List[Dict[str, Any]],
+    total_credit: float,
+    total_debit: float,
+) -> Dict[str, Any]:
+    def _rank_credit_rows() -> List[Dict[str, Any]]:
+        rows = [dict(x) for x in (material_channels or []) if float(x.get("deposit") or 0.0) > 0]
+        return sorted(rows, key=lambda r: -float(r.get("deposit") or 0.0))
+
+    def _rank_debit_rows() -> List[Dict[str, Any]]:
+        rows = [dict(x) for x in (material_channels or []) if float(x.get("withdrawal") or 0.0) > 0]
+        return sorted(rows, key=lambda r: -float(r.get("withdrawal") or 0.0))
+
+    top_sources = []
+    for row in _rank_credit_rows()[:5]:
+        top_sources.append({
+            "TRANSCODE": str(row.get("TRANSCODE") or ""),
+            "DESCRIPTION": str(row.get("DESCRIPTION") or ""),
+            "amount": round(float(row.get("deposit") or 0.0), 2),
+            "pct": round(float(row.get("CR%") or row.get("credit_pct") or 0.0), 2),
+        })
+
+    top_uses = []
+    for row in _rank_debit_rows()[:5]:
+        top_uses.append({
+            "TRANSCODE": str(row.get("TRANSCODE") or ""),
+            "DESCRIPTION": str(row.get("DESCRIPTION") or ""),
+            "amount": round(float(row.get("withdrawal") or 0.0), 2),
+            "pct": round(float(row.get("DR%") or row.get("debit_pct") or 0.0), 2),
+        })
+
+    credit_profile = ((channel_profile or {}).get("credit") or {}).get("channels") or []
+    debit_profile = ((channel_profile or {}).get("debit") or {}).get("channels") or []
+
+    recognized_sof = []
+    for ch in credit_profile:
+        if ch.get("declared_sof_match"):
+            recognized_sof.append({
+                "TRANSCODE": str(ch.get("TRANSCODE") or ""),
+                "DESCRIPTION": str(ch.get("DESCRIPTION") or ""),
+                "sof": str(ch.get("sof") or ""),
+                "pct": round(float(ch.get("CR%") or ch.get("credit_pct") or 0.0), 2),
+                "risk": str(ch.get("risk") or ""),
+            })
+
+    recognized_uof = []
+    for ch in debit_profile[:5]:
+        recognized_uof.append({
+            "TRANSCODE": str(ch.get("TRANSCODE") or ""),
+            "DESCRIPTION": str(ch.get("DESCRIPTION") or ""),
+            "pof": str(ch.get("pof") or ""),
+            "pct": round(float(ch.get("DR%") or ch.get("debit_pct") or 0.0), 2),
+            "risk": str(ch.get("risk") or ""),
+        })
+
+    return {
+        "account_overview": {
+            "total_credits": round(float(total_credit or 0.0), 2),
+            "total_debits": round(float(total_debit or 0.0), 2),
+            "top_credit_channels": top_sources,
+            "top_debit_channels": top_uses,
+        },
+        "source_of_funds": {
+            "recognized": recognized_sof,
+            "top_channels": top_sources,
+        },
+        "use_of_funds": {
+            "recognized": recognized_uof,
+            "top_channels": top_uses,
+        },
+        "suspicious_activity": summary_patterns[:10],
+    }
+
 def analyze_statement(
     df: pd.DataFrame,
     code_lookup,
@@ -1757,6 +1965,15 @@ def analyze_statement(
     except Exception:
         suspicious_total_rows = 0
 
+    summary_patterns = _build_summary_patterns(material_channels)
+    report_summary = _build_report_summary(
+        material_channels=material_channels,
+        channel_profile=channel_profile,
+        summary_patterns=summary_patterns,
+        total_credit=total_deposit,
+        total_debit=total_withdrawal,
+    )
+
     result = {
         "pivot_summary": pivot_summary,
         "pivot_summary_display": pivot_summary_display,
@@ -1765,6 +1982,13 @@ def analyze_statement(
         "channel_analysis": channel_analysis,
 
         "channel_profile": channel_profile,
+        "summary_patterns": summary_patterns,
+        "summary": report_summary,
+        "totals": {
+            "credits": round(total_deposit, 2),
+            "debits": round(total_withdrawal, 2),
+        },
+        "client": client_data,
 
         "raw_df": df,
 

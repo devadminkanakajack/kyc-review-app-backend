@@ -1,11 +1,14 @@
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 import re
 
 from utils.kyc_rules import REQUIRED_HEADINGS
 
 
+# ------------------------------------------------------------
+# basic helpers
+# ------------------------------------------------------------
 def _sf(v: Any) -> float:
     try:
         return float(v or 0.0)
@@ -22,46 +25,6 @@ def _si(v: Any) -> int:
 
 def _ss(v: Any) -> str:
     return str(v or "").strip()
-
-
-def _fmt_hits(hits: Any) -> str:
-    if isinstance(hits, list):
-        hits = [str(x) for x in hits if str(x).strip()]
-        return ", ".join(hits)
-    return _ss(hits)
-
-
-def _top(items: List[Dict[str, Any]], key: str, n: int = 8) -> List[Dict[str, Any]]:
-    return sorted(items or [], key=lambda x: _sf(x.get(key)), reverse=True)[: max(0, int(n))]
-
-
-def _channel_pct(
-    ch: Dict[str, Any],
-    direction: str,
-    material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
-) -> float:
-    if direction == "credit":
-        for k in ("CR%", "credit_pct", "cr_pct", "cr"):
-            if k in ch:
-                return _sf(ch.get(k))
-
-        code = _ss(ch.get("TRANSCODE"))
-        src = (material_by_code or {}).get(code) or {}
-        for k in ("CR%", "credit_pct", "cr_pct", "cr"):
-            if k in src:
-                return _sf(src.get(k))
-        return 0.0
-
-    for k in ("DR%", "debit_pct", "dr_pct", "dr"):
-        if k in ch:
-            return _sf(ch.get(k))
-
-    code = _ss(ch.get("TRANSCODE"))
-    src = (material_by_code or {}).get(code) or {}
-    for k in ("DR%", "debit_pct", "dr_pct", "dr"):
-        if k in src:
-            return _sf(src.get(k))
-    return 0.0
 
 
 def _ymd_to_dmy(s: Any) -> str:
@@ -107,669 +70,384 @@ def _risk_label_for_reason(reason: str) -> str:
         return "Third-party activity"
     if r == "recurrence":
         return "Recurrence"
-    return reason
+    return reason.replace("_", " ").title()
 
 
-def _risk_priority(risk_label: str) -> int:
-    if risk_label == "Structuring":
-        return 0
-    if risk_label == "Layering":
-        return 1
-    if risk_label == "Pass-through":
-        return 2
-    if risk_label == "Third-party activity":
-        return 3
-    if risk_label == "Cash-intensive activity":
-        return 4
-    if risk_label == "Round-figure amounts":
-        return 5
-    if risk_label == "Salary-like pattern":
-        return 6
-    if risk_label == "Recurrence":
-        return 7
-    return 10
-
-
-def _extract_identifier_groups(stats: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """
-    Fail-soft support for different analyze_statement payload shapes.
-    Accepts any of:
-      - identifiers
-      - top_identifiers
-      - parties
-      - top_parties_detailed
-    """
-    if not isinstance(stats, dict):
-        return []
-
-    candidates = (
-        stats.get("identifiers"),
-        stats.get("top_identifiers"),
-        stats.get("parties"),
-        stats.get("top_parties_detailed"),
-    )
-
-    picked: List[Dict[str, Any]] = []
-    for cand in candidates:
-        if isinstance(cand, list):
-            for item in cand:
-                if not isinstance(item, dict):
-                    continue
-
-                label = (
-                    _ss(item.get("identifier"))
-                    or _ss(item.get("label"))
-                    or _ss(item.get("party"))
-                    or _ss(item.get("name"))
-                )
-                if not label:
-                    continue
-
-                picked.append(
-                    {
-                        "identifier": label,
-                        "count": _si(item.get("count")),
-                        "total": _sf(item.get("total") or item.get("total_amount")),
-                        "date_min": item.get("date_min"),
-                        "date_max": item.get("date_max"),
-                    }
-                )
-            if picked:
-                break
-
-    picked = [
-        x for x in picked
-        if x.get("identifier") and (_si(x.get("count")) > 0 or _sf(x.get("total")) > 0)
-    ]
-
-    return sorted(
-        picked,
-        key=lambda x: (-_si(x.get("count")), -_sf(x.get("total")), _ss(x.get("identifier"))),
-    )
-
-
-def _render_identifier_groups(stats: Dict[str, Any], indent: str = "      ", top_n: Optional[int] = None) -> List[str]:
-    groups = _extract_identifier_groups(stats)
-    if not groups:
-        return []
-
-    lines: List[str] = [f"{indent}Recurring Parties:"]
-    display_groups = groups if top_n is None else groups[: max(1, int(top_n))]
-    for item in display_groups:
-        ident = _ss(item.get("identifier"))
-        count = _si(item.get("count"))
-        total = _sf(item.get("total"))
-        rng = _fmt_range(item.get("date_min"), item.get("date_max"))
-        lines.append(
-            f"{indent}  • {ident}: {count}x | K{total:,.2f} | {rng}"
-        )
-    return lines
-
-
-def _structuring_evidence_hint(stats: Dict[str, Any]) -> str:
-    hints: List[str] = []
-
-    band = _ss(stats.get("band_name") or stats.get("threshold_band") or stats.get("band"))
-    threshold = _sf(stats.get("threshold"))
-    near_count = _si(stats.get("near_band_count") or stats.get("near_count"))
-    sub_count = _si(stats.get("sub_threshold_count"))
-    distinct_amounts = _si(stats.get("distinct_amounts"))
-
-    if band:
-        hints.append(f"Band: {band}")
-    elif threshold > 0:
-        hints.append(f"Threshold focus: K{threshold:,.2f}")
-
-    if near_count > 0:
-        hints.append(f"Near-threshold entries: {near_count}")
-    if sub_count > 0:
-        hints.append(f"Sub-threshold entries: {sub_count}")
-    if distinct_amounts > 0:
-        hints.append(f"Distinct amounts: {distinct_amounts}")
-
-    if not hints:
-        return ""
-
-    return " | ".join(hints[:4])
-
-
-def _layering_evidence_hint(stats: Dict[str, Any]) -> str:
-    hints: List[str] = []
-
-    chains = _si(stats.get("chain_count") or stats.get("chains") or stats.get("chains_kept"))
-    parties = _si(stats.get("unique_parties") or stats.get("party_count"))
-    channels = _si(stats.get("unique_channels") or stats.get("channel_count"))
-    link_ratio = _sf(stats.get("link_ratio") or stats.get("outflow_ratio"))
-    lag_avg = stats.get("avg_lag_days") or stats.get("lag_avg_days")
-    frag = stats.get("fragmentation_index")
-
-    if chains > 0:
-        hints.append(f"Chains: {chains}")
-    if parties > 0:
-        hints.append(f"Parties: {parties}")
-    if channels > 0:
-        hints.append(f"Channels: {channels}")
-    if link_ratio > 0:
-        hints.append(f"Outflow linkage: {link_ratio:.2f}")
-    if lag_avg not in (None, "", "None"):
-        try:
-            hints.append(f"Avg lag: {float(lag_avg):.1f} days")
-        except Exception:
-            pass
-    if frag not in (None, "", "None"):
-        try:
-            hints.append(f"Fragmentation: {float(frag):.2f}")
-        except Exception:
-            pass
-
-    if not hints:
-        return ""
-
-    return " | ".join(hints[:4])
-
-
-def _pass_through_evidence_hint(stats: Dict[str, Any]) -> str:
-    hints: List[str] = []
-
-    fast_ratio = _sf(stats.get("fast_outflow_ratio") or stats.get("window_ratio"))
-    win_days = _si(stats.get("window_days"))
-    window_count = _si(stats.get("window_count"))
-    retained = _sf(stats.get("retained_ratio"))
-
-    if win_days > 0:
-        hints.append(f"Window: {win_days} days")
-    if window_count > 0:
-        hints.append(f"Flagged windows: {window_count}")
-    if fast_ratio > 0:
-        hints.append(f"Fast outflow ratio: {fast_ratio:.2f}")
-    if retained > 0:
-        hints.append(f"Retained ratio: {retained:.2f}")
-
-    if not hints:
-        return ""
-
-    return " | ".join(hints[:4])
-
-
-def _generic_evidence_hint(stats: Dict[str, Any], risk_label: str) -> str:
-    if not isinstance(stats, dict):
-        return ""
-
-    if risk_label == "Structuring":
-        return _structuring_evidence_hint(stats)
-    if risk_label == "Layering":
-        return _layering_evidence_hint(stats)
-    if risk_label == "Pass-through":
-        return _pass_through_evidence_hint(stats)
-
-    hints: List[str] = []
-
-    uniq = _si(stats.get("unique_parties"))
-    if uniq > 0:
-        hints.append(f"Parties: {uniq}")
-
-    top_amount = _sf(stats.get("top_amount") or stats.get("dominant_amount"))
-    if top_amount > 0:
-        hints.append(f"Dominant amount: K{top_amount:,.2f}")
-
-    top_freq = _si(stats.get("top_amount_count") or stats.get("dominant_frequency"))
-    if top_freq > 0:
-        hints.append(f"Frequency: {top_freq}")
-
-    if not hints:
-        return ""
-
-    return " | ".join(hints[:3])
-
-
-def _render_channel_suspicious_summaries(
-    material_channel: Optional[Dict[str, Any]],
+# ------------------------------------------------------------
+# fallbacks for older payloads
+# ------------------------------------------------------------
+def _channel_pct(
+    ch: Dict[str, Any],
     direction: str,
-) -> List[str]:
-    ch = material_channel or {}
-    by_reason = ch.get("detector_suspicious_by_reason") or {}
-    if not isinstance(by_reason, dict) or not by_reason:
-        return []
-
-    rows: List[Tuple[str, Dict[str, Any]]] = []
-    for reason, payload in by_reason.items():
-        if not isinstance(payload, dict):
-            continue
-        stats = payload.get(direction) or {}
-        if not isinstance(stats, dict):
-            continue
-
-        cnt = _si(stats.get("count"))
-        tot = _sf(stats.get("total"))
-        if cnt <= 0 and tot <= 0:
-            continue
-
-        rows.append((_risk_label_for_reason(str(reason)), stats))
-
-    if not rows:
-        return []
-
-    rows = sorted(
-        rows,
-        key=lambda item: (
-            _risk_priority(item[0]),
-            -_si(item[1].get("count")),
-            -_sf(item[1].get("total")),
-            item[0],
-        ),
-    )
-
-    lines: List[str] = ["  - Suspicious Transactions"]
-
-    for risk_label, stats in rows:
-        cnt = _si(stats.get("count"))
-        tot = _sf(stats.get("total"))
-        rng = _fmt_range(stats.get("date_min"), stats.get("date_max"))
-        parties = _si(stats.get("unique_parties"))
-        top_parties = [_ss(x) for x in (stats.get("top_parties") or []) if _ss(x)][:3]
-        top_txt = f" | Top parties: {', '.join(top_parties)}" if top_parties else ""
-
-        lines.append(f"    - {risk_label}")
-        lines.append(
-            f"      ✓ Date range: {rng} | Transactions: {cnt}x | Total: K{tot:,.2f} | Parties: {parties}{top_txt}"
-        )
-
-        evidence_hint = _generic_evidence_hint(stats, risk_label)
-        if evidence_hint:
-            lines.append(f"      ✓ Evidence: {evidence_hint}")
-
-        ident_lines = _render_identifier_groups(stats, indent='      ', top_n=None)
-        if ident_lines:
-            lines.extend(ident_lines)
-
-    return lines
-
-
-def _render_credit_channels(
-    profile_credit_channels: List[Dict[str, Any]],
-    top_n: int = 8,
     material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
-) -> List[str]:
-    lines: List[str] = []
-    ranked = sorted(
-        profile_credit_channels or [],
-        key=lambda ch: _channel_pct(ch, "credit", material_by_code=material_by_code),
-        reverse=True,
-    )[: max(0, int(top_n))]
-
-    for ch in ranked:
+) -> float:
+    if direction == "credit":
+        for k in ("CR%", "credit_pct", "cr_pct", "cr", "pct"):
+            if k in ch:
+                return _sf(ch.get(k))
         code = _ss(ch.get("TRANSCODE"))
-        desc = _ss(ch.get("DESCRIPTION"))
-        pct = _channel_pct(ch, "credit", material_by_code=material_by_code)
-        material_src = (material_by_code or {}).get(code) or {}
+        src = (material_by_code or {}).get(code) or {}
+        for k in ("CR%", "credit_pct", "cr_pct", "cr", "pct"):
+            if k in src:
+                return _sf(src.get(k))
+        return 0.0
 
-        sof = _ss(ch.get("sof")) or "Unverified"
-        risk = _ss(ch.get("risk"))
-        hits = _fmt_hits(ch.get("match_hits"))
-
-        tail = []
-        if risk:
-            tail.append(f"Risk: {risk}")
-        if hits:
-            tail.append(f"Match: {hits}")
-        tail_txt = (" | " + " | ".join(tail)) if tail else ""
-
-        lines.append(f"- {code} - {desc}: {pct:.2f}% of total credits. SoF: {sof}{tail_txt}")
-        lines.extend(_render_channel_suspicious_summaries(material_src, "credit"))
-    return lines
+    for k in ("DR%", "debit_pct", "dr_pct", "dr", "pct"):
+        if k in ch:
+            return _sf(ch.get(k))
+    code = _ss(ch.get("TRANSCODE"))
+    src = (material_by_code or {}).get(code) or {}
+    for k in ("DR%", "debit_pct", "dr_pct", "dr", "pct"):
+        if k in src:
+            return _sf(src.get(k))
+    return 0.0
 
 
-def _render_debit_channels(
-    profile_debit_channels: List[Dict[str, Any]],
-    top_n: int = 8,
-    material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
-) -> List[str]:
-    lines: List[str] = []
-    ranked = sorted(
-        profile_debit_channels or [],
-        key=lambda ch: _channel_pct(ch, "debit", material_by_code=material_by_code),
-        reverse=True,
-    )[: max(0, int(top_n))]
-
-    for ch in ranked:
-        code = _ss(ch.get("TRANSCODE"))
-        desc = _ss(ch.get("DESCRIPTION"))
-        pct = _channel_pct(ch, "debit", material_by_code=material_by_code)
-        material_src = (material_by_code or {}).get(code) or {}
-
-        pof = _ss(ch.get("pof")) or "Unverified"
-        risk = _ss(ch.get("risk"))
-        hits = _fmt_hits(ch.get("match_hits"))
-
-        tail = []
-        if risk:
-            tail.append(f"Risk: {risk}")
-        if hits:
-            tail.append(f"Match: {hits}")
-        tail_txt = (" | " + " | ".join(tail)) if tail else ""
-
-        lines.append(f"- {code} - {desc}: {pct:.2f}% of total debits. UoF/PoF: {pof}{tail_txt}")
-        lines.extend(_render_channel_suspicious_summaries(material_src, "debit"))
-    return lines
-
-
-def _fallback_ranked_channels(
+def _fallback_top_channels(
     material_channels: List[Dict[str, Any]],
     direction: str,
-    top_n: int = 5,
     material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
+    top_n: int = 5,
 ) -> List[Dict[str, Any]]:
     amt_key = "deposit" if direction == "credit" else "withdrawal"
     subset = [c for c in (material_channels or []) if _sf(c.get(amt_key)) > 0]
-    return sorted(
+    subset = sorted(
         subset,
-        key=lambda x: _channel_pct(x, direction, material_by_code=material_by_code),
+        key=lambda x: (_sf(x.get(amt_key)), _channel_pct(x, direction, material_by_code=material_by_code)),
         reverse=True,
-    )[: max(0, int(top_n))]
-
-
-def _summary_channels(
-    channels: List[Dict[str, Any]],
-    direction: str,
-    material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
-    top_n: int = 3,
-) -> List[str]:
-    out: List[str] = []
-    for ch in (channels or [])[: max(0, int(top_n))]:
-        code = _ss(ch.get("TRANSCODE"))
-        desc = _ss(ch.get("DESCRIPTION")) or "Unknown channel"
-        pct = _channel_pct(ch, direction, material_by_code=material_by_code)
-        label = _ss(ch.get("sof" if direction == "credit" else "pof")) or "Unverified"
-        out.append(f"{code} - {desc} ({pct:.2f}% | {label})")
-    return out
-
-
-def _recognized_sof_lines(
-    channel_profile: Dict[str, Any],
-    detectors: Dict[str, Any],
-    material_by_code: Optional[Dict[str, Dict[str, Any]]] = None,
-) -> List[str]:
-    lines: List[str] = []
-    for ch in (channel_profile.get("credit") or {}).get("channels") or []:
-        if not bool(ch.get("declared_sof_match")):
-            continue
-        code = _ss(ch.get("TRANSCODE"))
-        desc = _ss(ch.get("DESCRIPTION"))
-        sof = _ss(ch.get("sof")) or "Recognized SoF"
-        pct = _channel_pct(ch, "credit", material_by_code=material_by_code)
-        lines.append(f"    ✓ {code} - {desc}: appears consistent with declared SoF ({sof}) at {pct:.2f}% of total credits.")
-
-    salary = detectors.get("salary_pattern") or {}
-    if salary.get("triggered") and not salary.get("salary_wash_flag"):
-        cycle = _ss(salary.get("cycle")) or "irregular"
-        sources = salary.get("salary_sources") or []
-        src_txt = f" | Sources: {', '.join(map(str, sources[:3]))}" if sources else ""
-        lines.append(f"    ✓ Salary-like inflow pattern recognised as legitimate SoF support ({cycle} cadence){src_txt}.")
-    elif salary.get("salary_wash_flag"):
-        lines.append("    ✓ Salary-like inflows were detected, but associated salary-wash behaviour was also observed and retained under suspicious indicators.")
-
-    # de-duplicate while preserving order
-    out: List[str] = []
-    seen = set()
-    for line in lines:
-        if line not in seen:
-            seen.add(line)
-            out.append(line)
-    return out
-
-
-def _collect_summary_patterns(
-    detectors: Dict[str, Any],
-    material_channels: List[Dict[str, Any]],
-) -> List[Dict[str, Any]]:
-    pattern_map: Dict[str, Dict[str, Any]] = {}
-
-    for name, payload in (detectors or {}).items():
-        if not isinstance(payload, dict):
-            continue
-        if not payload.get("triggered"):
-            continue
-        if name == "salary_pattern" and not payload.get("salary_wash_flag"):
-            continue
-
-        label = _risk_label_for_reason(str(name))
-        entry = pattern_map.setdefault(label, {
-            "label": label,
-            "strength": 0.0,
-            "count": 0,
-            "credit_total": 0.0,
-            "debit_total": 0.0,
-            "channels": set(),
+    )
+    rows: List[Dict[str, Any]] = []
+    for row in subset[: max(0, int(top_n))]:
+        rows.append({
+            "TRANSCODE": _ss(row.get("TRANSCODE")),
+            "DESCRIPTION": _ss(row.get("DESCRIPTION")),
+            "amount": round(_sf(row.get(amt_key)), 2),
+            "pct": round(_channel_pct(row, direction, material_by_code=material_by_code), 2),
         })
-        entry["strength"] = max(entry["strength"], _sf(payload.get("strength")))
+    return rows
 
+
+def _fallback_summary_patterns(material_channels: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    buckets: Dict[str, Dict[str, Any]] = {}
     for ch in material_channels or []:
-        code = _ss(ch.get("TRANSCODE"))
-        desc = _ss(ch.get("DESCRIPTION"))
-        channel_label = f"{code} - {desc}" if code or desc else "Unknown channel"
+        channel_desc = _ss(ch.get("DESCRIPTION")) or _ss(ch.get("TRANSCODE")) or "UNKNOWN"
         by_reason = ch.get("detector_suspicious_by_reason") or {}
         if not isinstance(by_reason, dict):
             continue
-
         for reason, stats_block in by_reason.items():
-            label = _risk_label_for_reason(str(reason))
-            entry = pattern_map.setdefault(label, {
-                "label": label,
-                "strength": 0.0,
-                "count": 0,
-                "credit_total": 0.0,
-                "debit_total": 0.0,
-                "channels": set(),
-            })
-
-            if channel_label:
-                entry["channels"].add(channel_label)
-
-            if isinstance(stats_block, dict):
-                credit = stats_block.get("credit") or {}
-                debit = stats_block.get("debit") or {}
-                entry["count"] += _si(credit.get("count")) + _si(debit.get("count"))
-                entry["credit_total"] += _sf(credit.get("total"))
-                entry["debit_total"] += _sf(debit.get("total"))
-
-    ranked = sorted(
-        pattern_map.values(),
-        key=lambda x: (-x["strength"], -x["count"], -(x["credit_total"] + x["debit_total"]), x["label"]),
-    )
-
-    out: List[Dict[str, Any]] = []
-    for item in ranked:
+            if not isinstance(stats_block, dict):
+                continue
+            risk_label = _risk_label_for_reason(str(reason))
+            for direction in ("credit", "debit"):
+                stats = stats_block.get(direction) or {}
+                if not isinstance(stats, dict):
+                    continue
+                count = _si(stats.get("count"))
+                total = _sf(stats.get("total"))
+                if count <= 0 and total <= 0:
+                    continue
+                bucket_key = f"{risk_label}|{direction}"
+                bucket = buckets.setdefault(bucket_key, {
+                    "type": risk_label,
+                    "direction": direction,
+                    "count": 0,
+                    "total": 0.0,
+                    "date_min": None,
+                    "date_max": None,
+                    "channels": [],
+                    "parties": [],
+                })
+                bucket["count"] += count
+                bucket["total"] += total
+                dmin = _ss(stats.get("date_min")) or None
+                dmax = _ss(stats.get("date_max")) or None
+                if dmin and (bucket["date_min"] is None or dmin < bucket["date_min"]):
+                    bucket["date_min"] = dmin
+                if dmax and (bucket["date_max"] is None or dmax > bucket["date_max"]):
+                    bucket["date_max"] = dmax
+                if channel_desc and channel_desc not in bucket["channels"]:
+                    bucket["channels"].append(channel_desc)
+                for p in (stats.get("top_parties") or []):
+                    s = _ss(p)
+                    if s and s not in bucket["parties"]:
+                        bucket["parties"].append(s)
+    out = []
+    for item in sorted(buckets.values(), key=lambda x: (-_sf(x.get("total")), -_si(x.get("count")), _ss(x.get("type")))):
         out.append({
-            "label": item["label"],
-            "strength": round(float(item["strength"]), 3),
-            "count": int(item["count"]),
-            "credit_total": round(float(item["credit_total"]), 2),
-            "debit_total": round(float(item["debit_total"]), 2),
-            "channels": sorted(item["channels"])[:3],
+            "type": item["type"],
+            "direction": item["direction"],
+            "count": _si(item["count"]),
+            "total": round(_sf(item["total"]), 2),
+            "date_min": item["date_min"],
+            "date_max": item["date_max"],
+            "channels": item["channels"][:5],
+            "channel": ", ".join(item["channels"][:3]),
+            "parties": item["parties"][:5],
         })
     return out
 
 
-def _recurrence_hint(recurrence_clusters: Dict[str, Any], direction: str) -> str:
-    if not isinstance(recurrence_clusters, dict):
-        return ""
-
-    items = []
-    for key in ("identity_clusters", "same_day_identity_clusters", "narrative_clusters"):
-        val = recurrence_clusters.get(key)
-        if isinstance(val, list):
-            items.extend([x for x in val if isinstance(x, dict) and _ss(x.get("direction")).lower() == direction])
-
-    if not items:
-        return ""
-
-    ranked = sorted(
-        items,
-        key=lambda x: (-_si(x.get("count")), -_sf(x.get("total_amount"))),
-    )
-    top = ranked[0]
-    label = _ss(top.get("label") or top.get("pattern") or top.get("TRANSCODE") or "Recurring pattern")
-    count = _si(top.get("count"))
-    total = _sf(top.get("total_amount"))
-    return f"Most evident recurring {direction} pattern: {label} ({count}x | K{total:,.2f})."
+# ------------------------------------------------------------
+# render helpers for new report summary shape
+# ------------------------------------------------------------
+def _render_top_channel_lines(rows: List[Dict[str, Any]], label_key: str) -> List[str]:
+    out: List[str] = []
+    for row in rows or []:
+        code = _ss(row.get("TRANSCODE"))
+        desc = _ss(row.get("DESCRIPTION")) or "Unknown channel"
+        pct = _sf(row.get("pct"))
+        label = _ss(row.get(label_key))
+        amount = _sf(row.get("amount"))
+        tail = f" | K{amount:,.2f}" if amount > 0 else ""
+        if label:
+            out.append(f"    ✓ {code} - {desc} ({pct:.2f}% | {label}){tail}")
+        else:
+            out.append(f"    ✓ {code} - {desc} ({pct:.2f}%){tail}")
+    return out
 
 
+def _render_behavior_observations(detectors: Dict[str, Any], patterns: List[Dict[str, Any]]) -> List[str]:
+    lines: List[str] = []
+    salary = detectors.get("salary_pattern") or {}
+    if salary.get("triggered") and not salary.get("salary_wash_flag"):
+        cycle = _ss(salary.get("cycle")) or "recurring"
+        lines.append(f"    ✓ Salary-like inflow behaviour was detected with {cycle} cadence.")
+    elif salary.get("salary_wash_flag"):
+        lines.append("    ✓ Salary-like inflows were detected, however onward movement indicators were also observed.")
+
+    if (detectors.get("cash_intensive") or {}).get("triggered"):
+        lines.append("    ✓ Elevated cash-based activity was observed during the review period.")
+    if (detectors.get("third_party") or {}).get("triggered"):
+        lines.append("    ✓ Third-party transaction activity was identified in the account behaviour.")
+    if (detectors.get("pass_through") or {}).get("triggered"):
+        lines.append("    ✓ Rapid in-and-out movement of funds was identified in portions of the account activity.")
+    if (detectors.get("layering") or {}).get("triggered"):
+        lines.append("    ✓ Layering-style movement patterns were identified across flagged transactions.")
+    if not lines and not patterns:
+        lines.append("    ✓ Transaction activity appeared broadly consistent with expected account behaviour based on the analyzed statement.")
+    return lines
+
+
+def _render_suspicious_activity(patterns: List[Dict[str, Any]], top_n: int = 10) -> List[str]:
+    lines: List[str] = []
+    if not patterns:
+        lines.append("    ✓ No suspicious transaction patterns were identified from the analyzed material channels.")
+        return lines
+
+    for item in patterns[: max(0, int(top_n))]:
+        ptype = _ss(item.get("type")) or "Suspicious activity"
+        direction = _ss(item.get("direction")).lower()
+        direction_txt = f" ({direction})" if direction else ""
+        rng = _fmt_range(item.get("date_min"), item.get("date_max"))
+        count = _si(item.get("count"))
+        total = _sf(item.get("total"))
+        channel = _ss(item.get("channel"))
+        if not channel:
+            chans = item.get("channels") or []
+            if isinstance(chans, list) and chans:
+                channel = ", ".join([_ss(x) for x in chans if _ss(x)][:3])
+        parties = item.get("parties") or []
+        parties_txt = ", ".join([_ss(x) for x in parties if _ss(x)][:3])
+
+        sentence = (
+            f"    ✓ {ptype}{direction_txt} observed between {rng}: "
+            f"{count} transaction(s) totalling K{total:,.2f}"
+        )
+        if channel:
+            sentence += f" through {channel}"
+        sentence += "."
+        lines.append(sentence)
+        if parties_txt:
+            lines.append(f"      • Main parties involved: {parties_txt}.")
+    return lines
+
+
+# ------------------------------------------------------------
+# main builder
+# ------------------------------------------------------------
 def build_narrative_v1(context: Dict[str, Any]) -> str:
-    risk = context.get("risk_metrics") or {}
-    trigger = context.get("trigger") or {}
-    client = context.get("client") or {}
+    summary = context.get("summary") or {}
     totals = context.get("totals") or {}
-
-    total_credits = _sf(totals.get("credits"))
-    total_debits = _sf(totals.get("debits"))
-
-    channel_profile = context.get("channel_profile") or {}
-    cp_credit = (channel_profile.get("credit") or {})
-    cp_debit = (channel_profile.get("debit") or {})
-    cp_credit_channels = cp_credit.get("channels") or []
-    cp_debit_channels = cp_debit.get("channels") or []
-    using_profile = bool(cp_credit_channels or cp_debit_channels)
-
+    client = context.get("client") or {}
+    trigger = context.get("trigger") or {}
+    detectors = context.get("detectors") or {}
     material_channels = context.get("material_channels") or []
+    channel_profile = context.get("channel_profile") or {}
+    risk = context.get("risk_metrics") or {}
+
+    total_credits = _sf((summary.get("account_overview") or {}).get("total_credits") or totals.get("credits"))
+    total_debits = _sf((summary.get("account_overview") or {}).get("total_debits") or totals.get("debits"))
+
     material_by_code: Dict[str, Dict[str, Any]] = {
         _ss(ch.get("TRANSCODE")): ch
         for ch in material_channels
         if _ss(ch.get("TRANSCODE"))
     }
 
-    detectors = context.get("detectors") or {}
-    recurrence_clusters = context.get("recurrence_clusters") or {}
+    top_credit_channels = (summary.get("account_overview") or {}).get("top_credit_channels") or []
+    top_debit_channels = (summary.get("account_overview") or {}).get("top_debit_channels") or []
+    if not top_credit_channels:
+        top_credit_channels = _fallback_top_channels(material_channels, "credit", material_by_code=material_by_code, top_n=5)
+    if not top_debit_channels:
+        top_debit_channels = _fallback_top_channels(material_channels, "debit", material_by_code=material_by_code, top_n=5)
 
-    rating = risk.get("rating", "UNKNOWN")
-    scores = risk.get("scores", {}) or {}
-    overall = scores.get("overall", "N/A")
-    ml = scores.get("ml", "N/A")
-    tf = scores.get("tf", "N/A")
-    confidence = scores.get("confidence", "N/A")
+    recognized_sof = (summary.get("source_of_funds") or {}).get("recognized") or []
+    recognized_uof = (summary.get("use_of_funds") or {}).get("recognized") or []
 
-    try:
-        suspicious_total_rows = int(context.get("suspicious_total_rows") or 0)
-    except Exception:
-        suspicious_total_rows = 0
+    summary_patterns = context.get("summary_patterns") or (summary.get("suspicious_activity") or [])
+    if not summary_patterns:
+        summary_patterns = _fallback_summary_patterns(material_channels)
+
+    suspicious_total_rows = _si(context.get("suspicious_total_rows"))
+
+    rating = _ss(risk.get("rating") or "")
+    scores = risk.get("scores") or {}
+    overall = risk.get("overall") if "overall" in risk else scores.get("overall")
+    ml = scores.get("ml")
+    tf = scores.get("tf")
+    confidence = scores.get("confidence")
 
     lines: List[str] = []
 
+    # --------------------------------------------------------
     # 1) Credit Rationale
+    # --------------------------------------------------------
     lines.append(REQUIRED_HEADINGS[0])
     lines.append(f"- Total credits observed in the review period: K{total_credits:,.2f}.")
 
-    recognized_sof = _recognized_sof_lines(channel_profile, detectors, material_by_code=material_by_code)
-    if recognized_sof:
-        lines.append("  - Recognized Legitimate SoF Patterns")
-        lines.extend(recognized_sof)
-
-    if using_profile:
-        lines.extend(_render_credit_channels(cp_credit_channels, top_n=10, material_by_code=material_by_code))
-    else:
-        credit_only = _fallback_ranked_channels(material_channels, "credit", top_n=8, material_by_code=material_by_code)
-        for ch in credit_only:
-            code = _ss(ch.get("TRANSCODE"))
-            desc = _ss(ch.get("DESCRIPTION"))
-            pct = _channel_pct(ch, "credit", material_by_code=material_by_code)
-            lines.append(f"- {code} - {desc}: {pct:.2f}% of total credits. SoF: Unverified")
-            lines.extend(_render_channel_suspicious_summaries(ch, "credit"))
-
-    lines.append(f"- Risk engine outcome (if enabled): {rating} (ML={ml}, TF={tf}, Overall={overall}, Confidence={confidence}).")
-
-    # 2) Debit Rationale
-    lines.append(REQUIRED_HEADINGS[1])
-    lines.append(f"- Total debits observed in the review period: K{total_debits:,.2f}.")
-
-    if using_profile:
-        lines.extend(_render_debit_channels(cp_debit_channels, top_n=10, material_by_code=material_by_code))
-    else:
-        debit_only = _fallback_ranked_channels(material_channels, "debit", top_n=8, material_by_code=material_by_code)
-        for ch in debit_only:
-            code = _ss(ch.get("TRANSCODE"))
-            desc = _ss(ch.get("DESCRIPTION"))
-            pct = _channel_pct(ch, "debit", material_by_code=material_by_code)
-            lines.append(f"- {code} - {desc}: {pct:.2f}% of total debits. UoF/PoF: Unverified")
-            lines.extend(_render_channel_suspicious_summaries(ch, "debit"))
-
-    # 3) Summary of Both Rationales
-    lines.append(REQUIRED_HEADINGS[2])
-    lines.append("- Summary derived deterministically from analyzed statement behaviour.")
-
-    credit_summary_channels = cp_credit_channels if using_profile else _fallback_ranked_channels(
-        material_channels,
-        "credit",
-        top_n=5,
-        material_by_code=material_by_code,
-    )
-    debit_summary_channels = cp_debit_channels if using_profile else _fallback_ranked_channels(
-        material_channels,
-        "debit",
-        top_n=5,
-        material_by_code=material_by_code,
-    )
-
-    lines.append("  - Source of Funds (SoF)")
-    top_credit_lines = _summary_channels(credit_summary_channels, "credit", material_by_code=material_by_code, top_n=3)
-    if top_credit_lines:
-        for item in top_credit_lines:
-            lines.append(f"    ✓ {item}")
+    lines.append("  - Account Overview")
+    if top_credit_channels:
+        lines.append("    ✓ The main inbound channels observed during the review period were:")
+        lines.extend(_render_top_channel_lines(top_credit_channels[:5], label_key="sof"))
     else:
         lines.append("    ✓ No dominant inbound channel was identified from the analyzed statement.")
 
-    credit_recur = _recurrence_hint(recurrence_clusters, "credit")
-    if credit_recur:
-        lines.append(f"    ✓ {credit_recur}")
-    if suspicious_total_rows > 0:
-        lines.append("    ✓ Inbound risk indicators, where present, are reflected under the relevant credit channels above.")
-
-    lines.append("  - Use of Funds (UoF)")
-    top_debit_lines = _summary_channels(debit_summary_channels, "debit", material_by_code=material_by_code, top_n=3)
-    if top_debit_lines:
-        for item in top_debit_lines:
-            lines.append(f"    ✓ {item}")
+    lines.append("  - Source of Funds")
+    if recognized_sof:
+        lines.append("    ✓ Recognized legitimate source of funds indicators were identified as follows:")
+        lines.extend(_render_top_channel_lines(recognized_sof[:5], label_key="sof"))
+    elif top_credit_channels:
+        lines.append("    ✓ The source of funds presentation is based on the top inbound channels observed in the statement:")
+        for row in top_credit_channels[:5]:
+            code = _ss(row.get("TRANSCODE"))
+            desc = _ss(row.get("DESCRIPTION")) or "Unknown channel"
+            pct = _sf(row.get("pct"))
+            amount = _sf(row.get("amount"))
+            lines.append(f"    ✓ {code} - {desc}: {pct:.2f}% of total credits | K{amount:,.2f}.")
     else:
-        lines.append("    ✓ No dominant outbound channel was identified from the analyzed statement.")
+        lines.append("    ✓ No clear dominant source of funds was identified from the analyzed material channels.")
 
-    debit_recur = _recurrence_hint(recurrence_clusters, "debit")
-    if debit_recur:
-        lines.append(f"    ✓ {debit_recur}")
-    if suspicious_total_rows > 0:
-        lines.append("    ✓ Outbound risk indicators, where present, are reflected under the relevant debit channels above.")
+    # --------------------------------------------------------
+    # 2) Debit Rationale
+    # --------------------------------------------------------
+    lines.append(REQUIRED_HEADINGS[1])
+    lines.append(f"- Total debits observed in the review period: K{total_debits:,.2f}.")
 
-    lines.append("  - Detected Patterns")
-    patterns = _collect_summary_patterns(detectors, material_channels)
-    if patterns:
-        for item in patterns[:5]:
-            channels_txt = f" | Channels: {', '.join(item['channels'])}" if item.get("channels") else ""
-            totals_txt = []
-            if _sf(item.get("credit_total")) > 0:
-                totals_txt.append(f"Credit K{_sf(item.get('credit_total')):,.2f}")
-            if _sf(item.get("debit_total")) > 0:
-                totals_txt.append(f"Debit K{_sf(item.get('debit_total')):,.2f}")
-            totals_tail = f" | {' | '.join(totals_txt)}" if totals_txt else ""
-            count_tail = f" | Rows/instances: {_si(item.get('count'))}" if _si(item.get("count")) > 0 else ""
+    lines.append("  - Use of Funds")
+    if recognized_uof:
+        lines.append("    ✓ The primary uses of funds identified from channel classification were:")
+        lines.extend(_render_top_channel_lines(recognized_uof[:5], label_key="pof"))
+    elif top_debit_channels:
+        lines.append("    ✓ The use of funds presentation is based on the top outbound channels observed in the statement:")
+        for row in top_debit_channels[:5]:
+            code = _ss(row.get("TRANSCODE"))
+            desc = _ss(row.get("DESCRIPTION")) or "Unknown channel"
+            pct = _sf(row.get("pct"))
+            amount = _sf(row.get("amount"))
+            lines.append(f"    ✓ {code} - {desc}: {pct:.2f}% of total debits | K{amount:,.2f}.")
+    else:
+        lines.append("    ✓ No clear dominant use of funds was identified from the analyzed material channels.")
+
+    lines.append("  - Transaction Behaviour and Observations")
+    lines.extend(_render_behavior_observations(detectors, summary_patterns))
+
+    # --------------------------------------------------------
+    # 3) Summary of Both Rationales
+    # --------------------------------------------------------
+    lines.append(REQUIRED_HEADINGS[2])
+    lines.append("- Summary derived deterministically from analyzed statement behaviour and detector-supported transaction patterns.")
+
+    lines.append("  - Source of Funds (SoF)")
+    if recognized_sof:
+        for line in _render_top_channel_lines(recognized_sof[:3], label_key="sof"):
+            lines.append(line)
+    elif top_credit_channels:
+        for row in top_credit_channels[:3]:
             lines.append(
-                f"    ✓ {item['label']} | Strength: {float(item['strength']):.2f}{count_tail}{totals_tail}{channels_txt}"
+                f"    ✓ {_ss(row.get('TRANSCODE'))} - {_ss(row.get('DESCRIPTION')) or 'Unknown channel'} "
+                f"({_sf(row.get('pct')):.2f}% | K{_sf(row.get('amount')):,.2f})"
             )
     else:
-        lines.append("    ✓ No triggered detector pattern was identified from the analyzed statement.")
+        lines.append("    ✓ No dominant inbound channel was identified.")
 
+    lines.append("  - Use of Funds (UoF)")
+    if recognized_uof:
+        for line in _render_top_channel_lines(recognized_uof[:3], label_key="pof"):
+            lines.append(line)
+    elif top_debit_channels:
+        for row in top_debit_channels[:3]:
+            lines.append(
+                f"    ✓ {_ss(row.get('TRANSCODE'))} - {_ss(row.get('DESCRIPTION')) or 'Unknown channel'} "
+                f"({_sf(row.get('pct')):.2f}% | K{_sf(row.get('amount')):,.2f})"
+            )
+    else:
+        lines.append("    ✓ No dominant outbound channel was identified.")
+
+    lines.append("  - Suspicious Activity")
+    lines.extend(_render_suspicious_activity(summary_patterns, top_n=10))
+
+    # --------------------------------------------------------
     # 4) Overview and Background of Review
+    # --------------------------------------------------------
     lines.append(REQUIRED_HEADINGS[3])
-    lines.append(f"- Client type: {client.get('client_type', 'UNKNOWN')}.")
-    declared_sof = client.get("source_of_funds") or client.get("sourceOfFunds") or client.get("declared_source_of_funds")
+    client_type = _ss(client.get("client_type") or client.get("type"))
+    if client_type:
+        lines.append(f"- Client type: {client_type}.")
+
+    declared_sof = _ss(
+        client.get("source_of_funds")
+        or client.get("sourceOfFunds")
+        or client.get("declared_source_of_funds")
+    )
     if declared_sof:
         lines.append(f"- Declared source of funds: {declared_sof}.")
-    if client.get("individualProfile"):
-        lines.append(f"- Individual profile: {client.get('individualProfile')}.")
-    elif client.get("profile"):
-        lines.append(f"- Client profile: {client.get('profile')}.")
-    lines.append(f"- Trigger type: {trigger.get('type', 'UNKNOWN')}.")
-    lines.append(f"- Trigger source: {trigger.get('source', 'UNKNOWN')}.")
-    if trigger.get("description"):
-        lines.append(f"- Trigger background: {trigger.get('description')}")
+
+    client_profile = _ss(client.get("individualProfile") or client.get("profile") or client.get("individual_profile_type"))
+    if client_profile:
+        lines.append(f"- Client profile: {client_profile}.")
+
+    trig_type = _ss(trigger.get("type"))
+    trig_source = _ss(trigger.get("source"))
+    trig_desc = _ss(trigger.get("description"))
+    if trig_type:
+        lines.append(f"- Trigger type: {trig_type}.")
+    if trig_source:
+        lines.append(f"- Trigger source: {trig_source}.")
+    if trig_desc:
+        lines.append(f"- Trigger background: {trig_desc}.")
+
     if suspicious_total_rows > 0:
-        lines.append(f"- Detector-flagged suspicious transaction rows identified across analyzed material channels after contextual suppression: {suspicious_total_rows}.")
+        lines.append(
+            f"- Detector-flagged suspicious transaction rows identified across analyzed material channels after contextual suppression: {suspicious_total_rows}."
+        )
+
+    if rating or overall or ml is not None or tf is not None or confidence is not None:
+        tail = []
+        if ml is not None:
+            tail.append(f"ML={ml}")
+        if tf is not None:
+            tail.append(f"TF={tf}")
+        if overall is not None:
+            tail.append(f"Overall={overall}")
+        if confidence is not None:
+            tail.append(f"Confidence={confidence}")
+        joined = ", ".join(tail)
+        if rating and joined:
+            lines.append(f"- Risk engine outcome (if enabled): {rating} ({joined}).")
+        elif rating:
+            lines.append(f"- Risk engine outcome (if enabled): {rating}.")
+        elif joined:
+            lines.append(f"- Risk engine metrics (if enabled): {joined}.")
 
     return "\n".join(lines)
 
